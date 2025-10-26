@@ -1,0 +1,727 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>FL Simulation &#8212; ByzFL</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=613b6425" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'fed_framework/classes/fed_learning_sim';</script>
+    <script src="../../_static/custom-icon.js?v=74687d30"></script>
+    <link rel="icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="FL Benchmark" href="benchmark.html" />
+    <link rel="prev" title="Federated Learning Framework" href="../index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/byzfl_logo.png" class="logo__image only-light" alt="ByzFL - Home"/>
+    <img src="../../_static/byzfl_logo.png" class="logo__image only-dark pst-js-only" alt="ByzFL - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../aggregators/index.html">
+    Aggregators
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../attacks/index.html">
+    Attacks
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    Federated Learning Framework
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../team/index.html">
+    Our Team
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/LPD-EPFL/byzfl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/byzfl/" title="PyPi" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPi</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../aggregators/index.html">
+    Aggregators
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../attacks/index.html">
+    Attacks
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    Federated Learning Framework
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../team/index.html">
+    Our Team
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/LPD-EPFL/byzfl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/byzfl/" title="PyPi" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPi</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Federated Learning (FL) Framework</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">FL Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmark.html">FL Benchmark</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Helper Modules</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="model_base_interface.html">Model Base Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="robust_aggregators.html">Robust Aggregator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="byzantine_client.html">Byzantine Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="server.html">Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_distributor.html">Data Distributor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Federated Learning Framework</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">FL Simulation</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="fl-simulation">
+<span id="federated-learning-sim-label"></span><h1>FL Simulation<a class="headerlink" href="#fl-simulation" title="Link to this heading">#</a></h1>
+<p>The <strong>FL Simulation</strong> module demonstrates how to use the key components of the library — <code class="docutils literal notranslate"><span class="pre">Client</span></code>, <code class="docutils literal notranslate"><span class="pre">Server</span></code>, <code class="docutils literal notranslate"><span class="pre">ByzantineClient</span></code>, and <code class="docutils literal notranslate"><span class="pre">DataDistributor</span></code> — to simulate a federated learning environment. This example showcases how to perform distributed learning with Byzantine-resilient aggregation strategies.</p>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Client</span></code> Class: Simulates honest participants that compute gradients based on their local data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Server</span></code> Class: Simulates the central server that aggregates gradients and updates the global model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByzantineClient</span></code> Class: Simulates malicious participants injecting adversarial gradients into the aggregation process.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DataDistributor</span></code> Class: Handles the distribution of data among clients in various configurations, including IID and non-IID distributions (e.g., Dirichlet, Gamma, Extreme), to simulate realistic federated learning setups.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RobustAggregator</span></code> Class: Demonstrates the usage of robust aggregation techniques such as <a class="reference internal" href="../../aggregators/classes/trmean.html#trmean-label"><span class="std std-ref">Trimmed Mean</span></a>, combined with pre-aggregation methods like <a class="reference internal" href="../../aggregators/classes/clipping.html#clipping-label"><span class="std std-ref">Static Clipping</span></a> and <a class="reference internal" href="../../aggregators/classes/nnm.html#nnm-label"><span class="std std-ref">Nearest Neighbor Mixing (NNM)</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Models</span></code> Module: Stores a collection of available ML models for federated learning tasks on MNIST and CIFAR-10.</p></li>
+</ul>
+</section>
+<section id="example-federated-learning-workflow">
+<h2>Example: Federated Learning Workflow<a class="headerlink" href="#example-federated-learning-workflow" title="Link to this heading">#</a></h2>
+<p>This example uses the MNIST dataset to simulate a federated learning setup with five honest clients and two Byzantine clients. Follow the steps below to run the simulation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import necessary libraries</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">Tensor</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span>
+<span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">transforms</span>
+<span class="kn">from</span> <span class="nn">byzfl</span> <span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">Server</span><span class="p">,</span> <span class="n">ByzantineClient</span><span class="p">,</span> <span class="n">DataDistributor</span>
+<span class="kn">from</span> <span class="nn">byzfl.utils.misc</span> <span class="kn">import</span> <span class="n">set_random_seed</span>
+
+<span class="c1"># Set random seed for reproducibility</span>
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="n">set_random_seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+
+<span class="c1"># Configurations</span>
+<span class="n">nb_honest_clients</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">nb_byz_clients</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">nb_training_steps</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">25</span>
+
+<span class="c1"># Data Preparation</span>
+<span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span><span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">((</span><span class="mf">0.1307</span><span class="p">,),</span> <span class="p">(</span><span class="mf">0.3081</span><span class="p">,))])</span>
+<span class="n">train_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./data&quot;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+<span class="n">train_dataset</span><span class="o">.</span><span class="n">targets</span> <span class="o">=</span> <span class="n">Tensor</span><span class="p">(</span><span class="n">train_dataset</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="c1"># Required for Datasets that targets are not Tensor (e.g. CIFAR-10)</span>
+<span class="n">train_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Distribute data among clients using non-IID Dirichlet distribution</span>
+<span class="n">data_distributor</span> <span class="o">=</span> <span class="n">DataDistributor</span><span class="p">({</span>
+    <span class="s2">&quot;data_distribution_name&quot;</span><span class="p">:</span> <span class="s2">&quot;dirichlet_niid&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;distribution_parameter&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="s2">&quot;nb_honest&quot;</span><span class="p">:</span> <span class="n">nb_honest_clients</span><span class="p">,</span>
+    <span class="s2">&quot;data_loader&quot;</span><span class="p">:</span> <span class="n">train_loader</span><span class="p">,</span>
+    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="n">batch_size</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="n">client_dataloaders</span> <span class="o">=</span> <span class="n">data_distributor</span><span class="o">.</span><span class="n">split_data</span><span class="p">()</span>
+
+<span class="c1"># Initialize Honest Clients</span>
+<span class="n">honest_clients</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Client</span><span class="p">({</span>
+        <span class="s2">&quot;model_name&quot;</span><span class="p">:</span> <span class="s2">&quot;cnn_mnist&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;optimizer_name&quot;</span><span class="p">:</span> <span class="s2">&quot;SGD&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;learning_rate&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="s2">&quot;loss_name&quot;</span><span class="p">:</span> <span class="s2">&quot;NLLLoss&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;weight_decay&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span>
+        <span class="s2">&quot;milestones&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1000</span><span class="p">],</span>
+        <span class="s2">&quot;learning_rate_decay&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+        <span class="s2">&quot;LabelFlipping&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;training_dataloader&quot;</span><span class="p">:</span> <span class="n">client_dataloaders</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+        <span class="s2">&quot;momentum&quot;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">,</span>
+        <span class="s2">&quot;nb_labels&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="p">})</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_honest_clients</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="c1"># Prepare Test Dataset</span>
+<span class="n">test_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./data&quot;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+<span class="n">test_dataset</span><span class="o">.</span><span class="n">targets</span> <span class="o">=</span> <span class="n">Tensor</span><span class="p">(</span><span class="n">test_dataset</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="c1"># Required for Datasets that targets are not Tensor (e.g. CIFAR-10)</span>
+<span class="n">test_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">test_dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># Server Setup, Use SGD Optimizer</span>
+<span class="n">server</span> <span class="o">=</span> <span class="n">Server</span><span class="p">({</span>
+    <span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;model_name&quot;</span><span class="p">:</span> <span class="s2">&quot;cnn_mnist&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;test_loader&quot;</span><span class="p">:</span> <span class="n">test_loader</span><span class="p">,</span>
+    <span class="s2">&quot;optimizer_name&quot;</span><span class="p">:</span> <span class="s2">&quot;SGD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;learning_rate&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="s2">&quot;weight_decay&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span>
+    <span class="s2">&quot;milestones&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1000</span><span class="p">],</span>
+    <span class="s2">&quot;learning_rate_decay&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+    <span class="s2">&quot;aggregator_info&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;TrMean&quot;</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;f&quot;</span><span class="p">:</span> <span class="n">nb_byz_clients</span><span class="p">}},</span>
+    <span class="s2">&quot;pre_agg_list&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Clipping&quot;</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">}},</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;NNM&quot;</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;f&quot;</span><span class="p">:</span> <span class="n">nb_byz_clients</span><span class="p">}},</span>
+        <span class="p">]</span>
+<span class="p">})</span>
+
+<span class="c1"># Byzantine Client Setup</span>
+<span class="n">attack</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;InnerProductManipulation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;f&quot;</span><span class="p">:</span> <span class="n">nb_byz_clients</span><span class="p">,</span>
+    <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;tau&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">},</span>
+<span class="p">}</span>
+<span class="n">byz_client</span> <span class="o">=</span> <span class="n">ByzantineClient</span><span class="p">(</span><span class="n">attack</span><span class="p">)</span>
+
+<span class="c1"># Send Initial Model to All Clients</span>
+<span class="n">new_model</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">get_dict_parameters</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">client</span> <span class="ow">in</span> <span class="n">honest_clients</span><span class="p">:</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">set_model_state</span><span class="p">(</span><span class="n">new_model</span><span class="p">)</span>
+
+<span class="c1"># Training Loop</span>
+<span class="k">for</span> <span class="n">training_step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_training_steps</span><span class="p">):</span>
+
+    <span class="c1"># Evaluate Global Model Every 100 Training Steps</span>
+    <span class="k">if</span> <span class="n">training_step</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">test_acc</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">compute_test_accuracy</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--- Training Step </span><span class="si">{</span><span class="n">training_step</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">nb_training_steps</span><span class="si">}</span><span class="s2"> ---&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Test Accuracy: </span><span class="si">{</span><span class="n">test_acc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Honest Clients Compute Gradients</span>
+    <span class="k">for</span> <span class="n">client</span> <span class="ow">in</span> <span class="n">honest_clients</span><span class="p">:</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">compute_gradients</span><span class="p">()</span>
+
+    <span class="c1"># Aggregate Honest Gradients</span>
+    <span class="n">honest_gradients</span> <span class="o">=</span> <span class="p">[</span><span class="n">client</span><span class="o">.</span><span class="n">get_flat_gradients_with_momentum</span><span class="p">()</span> <span class="k">for</span> <span class="n">client</span> <span class="ow">in</span> <span class="n">honest_clients</span><span class="p">]</span>
+
+    <span class="c1"># Apply Byzantine Attack</span>
+    <span class="n">byz_vector</span> <span class="o">=</span> <span class="n">byz_client</span><span class="o">.</span><span class="n">apply_attack</span><span class="p">(</span><span class="n">honest_gradients</span><span class="p">)</span>
+
+    <span class="c1"># Combine Honest and Byzantine Gradients</span>
+    <span class="n">gradients</span> <span class="o">=</span> <span class="n">honest_gradients</span> <span class="o">+</span> <span class="n">byz_vector</span>
+
+    <span class="c1"># Update Global Model</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">update_model</span><span class="p">(</span><span class="n">gradients</span><span class="p">)</span>
+
+    <span class="c1"># Send Updated Model to Clients</span>
+    <span class="n">new_model</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">get_dict_parameters</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">client</span> <span class="ow">in</span> <span class="n">honest_clients</span><span class="p">:</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">set_model_state</span><span class="p">(</span><span class="n">new_model</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Training Complete!&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="example-output">
+<h2>Example Output<a class="headerlink" href="#example-output" title="Link to this heading">#</a></h2>
+<p>Running the above code will produce the following output:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--- Training Step 0/1000 ---
+Test Accuracy: 0.0600
+--- Training Step 100/1000 ---
+Test Accuracy: 0.6375
+--- Training Step 200/1000 ---
+Test Accuracy: 0.8148
+--- Training Step 300/1000 ---
+Test Accuracy: 0.9318
+--- Training Step 400/1000 ---
+Test Accuracy: 0.8588
+--- Training Step 500/1000 ---
+Test Accuracy: 0.9537
+--- Training Step 600/1000 ---
+Test Accuracy: 0.9185
+--- Training Step 700/1000 ---
+Test Accuracy: 0.9511
+--- Training Step 800/1000 ---
+Test Accuracy: 0.9400
+--- Training Step 900/1000 ---
+Test Accuracy: 0.9781
+--- Training Step 1000/1000 ---
+Test Accuracy: 0.9733
+Training Complete!
+</pre></div>
+</div>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>This example can be extended to other datasets and models by modifying the parameters accordingly.</p></li>
+<li><p>The robustness of the system depends on the aggregation methods and the number of Byzantine participants.</p></li>
+<li><p>The module is designed to be flexible and adaptable for experimentation with different setups.</p></li>
+</ul>
+</section>
+<section id="documentation-references">
+<h2>Documentation References<a class="headerlink" href="#documentation-references" title="Link to this heading">#</a></h2>
+<dl class="simple">
+<dt>For more information about individual components, refer to the following:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Client</span></code> Class: <a class="reference internal" href="client.html#client-label"><span class="std std-ref">Client</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Server</span></code> Class: <a class="reference internal" href="server.html#server-label"><span class="std std-ref">Server</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByzantineClient</span></code> Class: <a class="reference internal" href="byzantine_client.html#byzantine-client-label"><span class="std std-ref">Byzantine Client</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RobustAggregator</span></code> Class: <a class="reference internal" href="robust_aggregators.html#robust-aggregator-label"><span class="std std-ref">Robust Aggregator</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DataDistributor</span></code> Class: <a class="reference internal" href="data_distributor.html#data-dist-label"><span class="std std-ref">Data Distributor</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Models</span></code> Module: <a class="reference internal" href="models.html#models-label"><span class="std std-ref">Models</span></a></p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Federated Learning Framework</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="benchmark.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">FL Benchmark</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-features">Key Features</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-federated-learning-workflow">Example: Federated Learning Workflow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-output">Example Output</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#documentation-references">Documentation References</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, EPFL.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
