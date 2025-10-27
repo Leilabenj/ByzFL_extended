@@ -2,15 +2,18 @@
 
 ## **PERSONAL PROGRESS TRACKER**
 
-**Current Status**: First Iteration en cours : Communication & Gossip-Based Aggregation sans byz nodes
+**Current Status**: First Iteration en cours : Commencer avec class Node (client + server). Chaque node a son propre model, optimizer et scheduler. Peut aggregate localement apres avoir recu neighbors_grad (gossip_aggr). Network_manager agit encore comme un 'central-like' server qui a acces a tous les grad et les attribue aux voisins. 
 
-- **Next Steps**: Test the fixed implementation, then move to Byzantine robustness
+Tout semble bien fonctionner (loss decreases, acc increases)
+
+- **Next Steps**: Implement local communication between nodes (replace networkmanager)
 - **Key Achievements**: 
   - Decentralized Node class with ByzFL compatibility
   - Graph-based topology with Metropolis-Hastings mixing
   - Gossip-based aggregation implemented
   - Tensor/Numpy consistency issues resolved
-- **Known Issues**: Global acc 0 during training, check global averaging for acc 
+
+Iteration 2 : Still no byzclients. First ensure communication between nodes is efficient and working.
 
 ---
 

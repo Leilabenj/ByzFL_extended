@@ -84,16 +84,26 @@ class NetworkManager:
         
         # Step 1: All nodes compute gradients (ByzFL Client pattern)
         for node_id, node in self.nodes.items():
+            # Compute gradients on local data - this should use each node's unique dataloader
             node.compute_gradients()
+            
+            # DEBUG: Verify each node has different local loss (indicates different data)
+            local_loss = node.get_loss_list()[-1] if node.get_loss_list() else 0.0
             round_results[node_id] = {
-                "local_loss": node.get_loss_list()[-1] if node.get_loss_list() else 0.0
+                "local_loss": local_loss
             }
         
         # Step 2: Collect gradients from all nodes
         all_gradients = []
         for node_id, node in self.nodes.items():
-            gradients = node.get_flat_gradients_with_momentum()
+            # Use get_flat_gradients() instead of get_flat_gradients_with_momentum()
+            # to avoid double momentum (manual momentum in client + optimizer momentum)
+            gradients = node.get_flat_gradients()
             all_gradients.append(gradients)
+            
+            # DEBUG: Check if gradients differ between nodes (indicates different local training)
+            if self.current_round == 0:
+                print(f"DEBUG Round {self.current_round}: Node {node_id} gradient norm: {np.linalg.norm(gradients)}")
         
         # Step 3: Each node performs gossip aggregation on gradients
         for node_id, node in self.nodes.items():
@@ -112,7 +122,8 @@ class NetworkManager:
             if neighbor_gradients:
                 aggregated_gradients = node.gossip_aggregate(neighbor_gradients)
                 
-                # Update model with aggregated gradients (ByzFL Server pattern)
+                # Update model with aggregated gradients after local epoch
+                # Each node steps its own scheduler (decentralized approach)
                 node.update_model_with_gradients([aggregated_gradients])
                 
                 # Update current parameters
@@ -157,6 +168,20 @@ class NetworkManager:
             "num_nodes": len(self.nodes),
             "node_states": node_states
         }
+    
+    def debug_dataloaders(self) -> None:
+        """
+        Print debug information about each node's dataloader to verify local data distribution.
+        """
+        print("\n" + "="*60)
+        print("DATALOADER DEBUG: Checking if nodes have different local data")
+        print("="*60)
+        for node_id, node in sorted(self.nodes.items()):
+            info = node.get_dataloader_info()
+            print(f"\nNode {node_id}:")
+            for key, value in info.items():
+                print(f"  {key}: {value}")
+        print("="*60 + "\n")
 
 
 

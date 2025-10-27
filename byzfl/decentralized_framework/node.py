@@ -168,7 +168,7 @@ class Node(ModelBaseInterface):
         float
             The loss value for the current batch.
         """
-        self.model.zero_grad()
+        self.optimizer.zero_grad()  # Zero optimizer state, not just gradients
         outputs = self.model(inputs)
         loss = self.criterion(outputs, targets)
         loss_value = loss.item()
@@ -486,8 +486,14 @@ class Node(ModelBaseInterface):
     
     def update_model_with_gradients(self, gradients):
         """
-        Update model using aggregated gradients.
-        This follows the ByzFL Server pattern.
+        Update model using aggregated gradients after local epoch completion.
+        In decentralized setting, each node manages its own optimizer and scheduler.
+        The scheduler steps after each local epoch update (compute grad + aggregate + update).
+        
+        Parameters
+        ----------
+        gradients : list or np.ndarray or torch.Tensor
+            Aggregated gradients to apply.
         """
         # Extract the single aggregated gradient (should be numpy array from gossip_aggregate)
         if isinstance(gradients, list) and len(gradients) == 1:
@@ -507,7 +513,7 @@ class Node(ModelBaseInterface):
         # Convert numpy array to PyTorch tensor for set_gradients
         aggregate_gradient_tensor = torch.from_numpy(aggregate_gradient).float()
         
-        # Set gradients and update model
+        # Set aggregated gradients and step (this advances both optimizer and scheduler)
         self.set_gradients(aggregate_gradient_tensor)
         self._step()
     
@@ -522,10 +528,33 @@ class Node(ModelBaseInterface):
     def _step(self):
         """
         Execute a single optimization step for the model.
-        This follows the ByzFL Server pattern.
+        In decentralized setting, each node manages its own optimizer and scheduler.
+        The scheduler steps after each local epoch update.
         """
         self.optimizer.step()
         self.scheduler.step()
+    
+    def _compute_accuracy(self, data_loader):
+        """
+        Compute accuracy on a given dataset.
+        This follows the ByzFL Server pattern.
+        """
+        total = 0
+        correct = 0
+        for inputs, targets in data_loader:
+            inputs, targets = inputs.to(self.device), targets.to(self.device)
+            outputs = self.model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+        return correct / total
+    
+    def compute_test_accuracy(self):
+        """
+        Compute test accuracy using the test_loader.
+        This follows the ByzFL Server pattern.
+        """
+        return self._compute_accuracy(self.test_loader)
     
     def _check_convergence(self) -> None:
         """
@@ -573,4 +602,33 @@ class Node(ModelBaseInterface):
             "converged": self.converged,
             "parameter_norm": np.linalg.norm(self.current_parameters) if self.current_parameters is not None else 0.0
         }
+    
+    def get_dataloader_info(self) -> Dict[str, Any]:
+        """
+        Get information about the node's dataloader.
+        
+        Returns
+        -------
+        dict
+            Dataloader information including dataset size, batch info, etc.
+        """
+        import torch
+        if self.training_dataloader is not None:
+            # Get dataset from dataloader
+            if hasattr(self.training_dataloader, 'dataset'):
+                dataset = self.training_dataloader.dataset
+                # Get a sample to check shape
+                try:
+                    sample = dataset[0]
+                    return {
+                        "node_id": self.node_id,
+                        "dataset_size": len(dataset),
+                        "batch_size": self.training_dataloader.batch_size if hasattr(self.training_dataloader, 'batch_size') else 'N/A',
+                        "sample_shape": sample[0].shape if sample else 'N/A',
+                        "num_batches": len(self.training_dataloader),
+                        "dataloader_id": id(self.training_dataloader)
+                    }
+                except:
+                    return {"node_id": self.node_id, "error": "Could not get dataset info"}
+        return {"node_id": self.node_id, "dataloader": None}
 
