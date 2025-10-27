@@ -45,31 +45,7 @@ class NetworkManager:
         self.current_round = 0
         self.global_converged = False
         
-    def send_message(self, sender_id: int, target_id: int, message: Dict[str, Any]) -> None:
-        """
-        Send a message from one node to another.
-        
-        Parameters
-        ----------
-        sender_id : int
-            ID of the sending node
-        target_id : int
-            ID of the target node
-        message : dict
-            Message content
-        """
-        if target_id in self.nodes:
-            self.message_buffer[target_id].append(message)
-    
-    def deliver_messages(self) -> None:
-        """
-        Deliver all pending messages to their target nodes.
-        """
-        for target_id, messages in self.message_buffer.items():
-            if target_id in self.nodes:
-                for message in messages:
-                    self.nodes[target_id].receive_message(message)
-        self.message_buffer.clear()
+
     
     def perform_decentralized_round(self) -> Dict[str, Any]:
         """

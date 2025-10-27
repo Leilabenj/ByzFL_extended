@@ -5,6 +5,8 @@
 **Current Status**: First Iteration en cours : Commencer avec class Node (client + server). Chaque node a son propre model, optimizer et scheduler. Peut aggregate localement apres avoir recu neighbors_grad (gossip_aggr). Network_manager agit encore comme un 'central-like' server qui a acces a tous les grad et les attribue aux voisins. 
 
 Tout semble bien fonctionner (loss decreases, acc increases)
+- **A checker** : histoire de momentum..??
+
 
 - **Next Steps**: Implement local communication between nodes (replace networkmanager)
 - **Key Achievements**: 
@@ -12,6 +14,8 @@ Tout semble bien fonctionner (loss decreases, acc increases)
   - Graph-based topology with Metropolis-Hastings mixing
   - Gossip-based aggregation implemented
   - Tensor/Numpy consistency issues resolved
+
+
 
 Iteration 2 : Still no byzclients. First ensure communication between nodes is efficient and working.
 
@@ -21,14 +25,14 @@ This project enhances the ByzFL library by enabling fully decentralized federate
 
 ## First Iteration: Core Communication & Gossip-Based Aggregation
 
-The first iteration focuses on establishing the fundamental decentralized learning mechanisms while maintaining compatibility with ByzFL's robust aggregation methods. **Note: This iteration does not handle Byzantine nodes yet** - it focuses purely on core communication and gossip-based aggregation among honest nodes.
+The first iteration focuses on establishing the fundamental decentralized learning mechanisms while maintaining compatibility with ByzFL's robust aggregation methods. Note: This iteration does not handle Byzantine nodes yet or communication between nodes - it focuses purely on establishing the class Node (client+server) and gossip-based aggregation among honest nodes.
 
 ### Key Features Implemented
 
 #### 1. **Decentralized Node Architecture**
 - **Hybrid Node Design**: Each node combines ByzFL's `Client` and `Server` functionality
 - **ByzFL Compatibility**: Inherits from `ModelBaseInterface` and uses ByzFL's training methods
-- **Local Training**: Nodes perform local training using `compute_gradients()` and `get_flat_gradients_with_momentum()`
+- **Local Training**: Nodes perform local training using `compute_gradients()` and `get_flat_gradients()`
 - **Gossip Aggregation**: Nodes aggregate gradients using `update_model_with_gradients()`
 
 #### 2. **Graph-Based Topology**
@@ -38,52 +42,18 @@ The first iteration focuses on establishing the fundamental decentralized learni
 - **Topology Views**: Each node maintains a local view of its neighborhood
 
 #### 3. **Core Communication Layer**
-- **Message Passing Framework**: Infrastructure for peer-to-peer communication (placeholder for future iterations)
-- **Gradient Exchange**: Nodes share gradients with their neighbors
-- **Synchronized Rounds**: Coordinated learning rounds across the network
-- **Convergence Detection**: Parameter-based convergence checking
+- Not present --> NetworkManager
 
 #### 4. **Gossip-Based Aggregation**
 - **Mixing Matrix Integration**: Uses Metropolis-Hastings weights for gradient aggregation
-- **Local Robust Aggregation**: Each node applies ByzFL's robust aggregators to neighbor gradients
-- **ByzFL Pattern Compliance**: Follows the exact ByzFL workflow: `compute_gradients()` → `get_flat_gradients_with_momentum()` → `update_model_with_gradients()`
+- **Local Robust Aggregation**: Each node aggregates using weights from W (mixing weights matrix)
+- **ByzFL Pattern Compliance**: Follows the exact ByzFL workflow: `compute_gradients()` → `get_flat_gradients()` → `update_model_with_gradients()`
 
-### Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Network Manager                         │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  • Graph Topology Management                           │ │
-│  │  • Message Routing (Centralized Coordination)         │ │
-│  │  • Round Synchronization                              │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Decentralized Nodes                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   Node 0    │  │   Node 1    │  │   Node N    │  ...   │
-│  │ ┌─────────┐ │  │ ┌─────────┐ │  │ ┌─────────┐ │        │
-│  │ │ ByzFL   │ │  │ │ ByzFL   │ │  │ │ ByzFL   │ │        │
-│  │ │ Client  │ │  │ │ Client  │ │  │ │ Client  │ │        │
-│  │ └─────────┘ │  │ └─────────┘ │  │ └─────────┘ │        │
-│  │ ┌─────────┐ │  │ ┌─────────┐ │  │ ┌─────────┐ │        │
-│  │ │ ByzFL   │ │  │ │ ByzFL   │ │  │ │ ByzFL   │ │        │
-│  │ │ Server  │ │  │ │ Server  │ │  │ │ Server  │ │        │
-│  │ └─────────┘ │  │ └─────────┘ │  │ └─────────┘ │        │
-│  │ ┌─────────┐ │  │ ┌─────────┐ │  │ ┌─────────┐ │        │
-│  │ │ Gossip  │ │  │ │ Gossip  │ │  │ │ Gossip  │ │        │
-│  │ │ Aggreg. │ │  │ │ Aggreg. │ │  │ │ Aggreg. │ │        │
-│  │ └─────────┘ │  │ └─────────┘ │  │ └─────────┘ │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
-└─────────────────────────────────────────────────────────────┘
-```
 
 ### Learning Process Flow
 
-1. **Initialization**: All nodes start with identical models
+1. **Initialization**: All nodes start with identical models from node 0
 2. **Local Training**: Each node computes gradients on its local data
 3. **Gradient Collection**: Network manager collects gradients from all nodes
 4. **Gossip Aggregation**: Each node aggregates gradients from its neighbors using mixing weights
@@ -172,10 +142,8 @@ for training_step in range(nb_training_steps):
 
 ### Future Iterations Roadmap
 
-- **Iteration 2**: True peer-to-peer communication and asynchronous learning
+- **Iteration 2**: True peer-to-peer communication (and asynchronous learning?)
 - **Iteration 3**: Byzantine robustness integration with ByzFL's robust aggregators
-- **Iteration 4**: Dynamic topology management and fault tolerance
-- **Iteration 5**: Advanced consensus mechanisms and privacy preservation
 
 ### Files Structure
 
@@ -184,7 +152,6 @@ byzfl/decentralized_framework/
 ├── node.py              # Decentralized node implementation
 ├── network_manager.py    # Network coordination and management
 ├── graph.py             # Graph topology and mixing matrix utilities
-└── test.ipynb          # Complete example with MNIST dataset
+└── test.ipynb          # Complete example with MNIST dataset (workflow)
 ```
 
-This first iteration successfully demonstrates core decentralized learning concepts while maintaining full compatibility with ByzFL's established patterns and methods.

@@ -99,6 +99,9 @@ class Node(ModelBaseInterface):
         else:  # Already numpy array
             self.current_parameters = np.array(flat_params)
 
+
+  # ==================== METHODS FROM CLIENT AND SERVER ====================
+
     def _sample_train_batch(self):
         """
         Description
@@ -183,57 +186,8 @@ class Node(ModelBaseInterface):
             self.train_acc_list.append(acc)
 
         return loss_value
-    
-    def compute_model_update(self, num_rounds):
-        """
-        Description
-        -----------
-        Executes multiple rounds of training updates on the model. For each round,
-        it samples a batch of training data, performs a backward pass to compute
-        gradients, and updates the model parameters. Optionally logs training loss
-        and accuracy.
 
-        Parameters
-        ----------
-        num_rounds : int
-            The number of training iterations to perform. Each iteration includes
-            sampling a batch, computing the loss and gradients, and updating the model.
-
-        Returns
-        -------
-        float
-            The mean loss across all training rounds.
-        """
-
-        losses = np.zeros((num_rounds))
-        for i in range(num_rounds):
-            inputs, targets = self._sample_train_batch()
-            inputs, targets = inputs.to(self.device), targets.to(self.device)
             
-            self.optimizer.zero_grad()
-            train_loss_value = self._backward_pass(inputs, targets, train_acc=self.store_per_client_metrics)
-            losses[i] = train_loss_value
-            self.optimizer.step()
-
-            if self.store_per_client_metrics:
-                self.loss_list.append(train_loss_value)
-
-        return losses.mean()
-            
-
-    def get_flat_flipped_gradients(self):
-        """
-        Description
-        -----------
-        Retrieves the gradients computed using flipped targets as a flat array.
-
-        Returns
-        -------
-        numpy.ndarray or torch.Tensor
-            A flat array containing the gradients for the model parameters 
-            when trained with flipped targets.
-        """
-        return flatten_dict(self.gradient_LF)
 
     def get_flat_gradients_with_momentum(self):
         """
@@ -312,71 +266,8 @@ class Node(ModelBaseInterface):
             raise TypeError(f"'state_dict' must be of type dict, but got {type(state_dict).__name__}")
         self.model.load_state_dict(state_dict)
 
-    # ==================== DECENTRALIZED COMMUNICATION METHODS ====================
-    
-    def send_message(self, target_node_id: int, message: Dict[str, Any]) -> None:
-        """
-        Send a message to a specific neighbor node.
-        
-        Parameters
-        ----------
-        target_node_id : int
-            ID of the target neighbor node
-        message : dict
-            Message containing parameters, round number, etc.
-        """
-        if target_node_id not in self.neighbors:
-            raise ValueError(f"Node {target_node_id} is not a neighbor of node {self.node_id}")
-        
-        # In a real implementation, this would send over network
-        # For now, we'll simulate by directly calling receive_message on target
-        # This will be replaced with actual network communication
-        pass
-    
-    def receive_message(self, message: Dict[str, Any]) -> None:
-        """
-        Receive a message from a neighbor node.
-        
-        Parameters
-        ----------
-        message : dict
-            Received message containing parameters and metadata
-        """
-        with self.message_lock:
-            self.message_queue.append(message)
-    
-    def get_pending_messages(self) -> List[Dict[str, Any]]:
-        """
-        Get all pending messages from the message queue.
-        
-        Returns
-        -------
-        list
-            List of pending messages
-        """
-        with self.message_lock:
-            messages = list(self.message_queue)
-            self.message_queue.clear()
-            return messages
-    
-    def broadcast_parameters(self, round_number: int) -> None:
-        """
-        Broadcast current model parameters to all neighbors.
-        
-        Parameters
-        ----------
-        round_number : int
-            Current round number for synchronization
-        """
-        message = {
-            "sender_id": self.node_id,
-            "round_number": round_number,
-            "parameters": self.current_parameters.copy(),
-            "timestamp": time.time()
-        }
-        
-        for neighbor_id in self.neighbors:
-            self.send_message(neighbor_id, message)
+    # ==================== DECENTRALIZED METHODS FOR LOCAL UPDATES AND AGGREGATION ====================
+
     
     def gossip_aggregate(self, neighbor_parameters: List) -> np.ndarray:
         """
@@ -428,61 +319,7 @@ class Node(ModelBaseInterface):
         
         return aggregated
     
-    def perform_local_training(self, num_local_epochs: int = 1) -> float:
-        """
-        Perform local training on the node's data.
-        
-        Parameters
-        ----------
-        num_local_epochs : int
-            Number of local training epochs
-            
-        Returns
-        -------
-        float
-            Average training loss
-        """
-        return self.compute_model_update(num_local_epochs)
-    
-    def compute_gradients(self):
-        """
-        Compute gradients for the current training batch.
-        This follows the ByzFL Client pattern.
-        """
-        inputs, targets = self._sample_train_batch()
-        inputs, targets = inputs.to(self.device), targets.to(self.device)
 
-        if self.labelflipping:
-            self.model.eval()
-            targets_flipped = targets.sub(self.nb_labels - 1).mul(-1)
-            self._backward_pass(inputs, targets_flipped)
-            self.gradient_LF = self.get_dict_gradients()
-            self.model.train()
-
-        train_loss_value = self._backward_pass(inputs, targets, train_acc=self.store_per_client_metrics)
-
-        if self.store_per_client_metrics:
-            self.loss_list.append(train_loss_value)
-
-        return train_loss_value
-    
-    
-    def aggregate(self, vectors):
-        """
-        Aggregate input vectors using the configured robust aggregator.
-        This follows the ByzFL Server pattern.
-        
-        Parameters
-        ----------
-        vectors : list or np.ndarray or torch.Tensor
-            A collection of input vectors to be aggregated.
-            
-        Returns
-        -------
-        numpy.ndarray or torch.Tensor
-            Aggregated output vector, with the same type as the input vectors.
-        """
-        return self.robust_aggregator.aggregate_vectors(vectors)
     
     def update_model_with_gradients(self, gradients):
         """
@@ -603,32 +440,5 @@ class Node(ModelBaseInterface):
             "parameter_norm": np.linalg.norm(self.current_parameters) if self.current_parameters is not None else 0.0
         }
     
-    def get_dataloader_info(self) -> Dict[str, Any]:
-        """
-        Get information about the node's dataloader.
-        
-        Returns
-        -------
-        dict
-            Dataloader information including dataset size, batch info, etc.
-        """
-        import torch
-        if self.training_dataloader is not None:
-            # Get dataset from dataloader
-            if hasattr(self.training_dataloader, 'dataset'):
-                dataset = self.training_dataloader.dataset
-                # Get a sample to check shape
-                try:
-                    sample = dataset[0]
-                    return {
-                        "node_id": self.node_id,
-                        "dataset_size": len(dataset),
-                        "batch_size": self.training_dataloader.batch_size if hasattr(self.training_dataloader, 'batch_size') else 'N/A',
-                        "sample_shape": sample[0].shape if sample else 'N/A',
-                        "num_batches": len(self.training_dataloader),
-                        "dataloader_id": id(self.training_dataloader)
-                    }
-                except:
-                    return {"node_id": self.node_id, "error": "Could not get dataset info"}
-        return {"node_id": self.node_id, "dataloader": None}
+
 
