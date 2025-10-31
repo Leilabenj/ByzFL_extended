@@ -4,12 +4,33 @@ import networkx as nx
 import scipy.sparse as sp
 from typing import Optional, Dict, Any
 from scipy.sparse.linalg import eigs
+import random
 
 
 
 
-def build_graph_G(k,n):
-    G = nx.random_regular_graph(k, n, seed=42)
+def build_graph_G(n,e,seed=None):
+    """
+    Function to generate a random connected graph with n nodes and e edges.
+    """
+    if e < n - 1 or e > n * (n - 1) // 2:
+        raise ValueError("Invalid number of edges for a simple connected graph.")
+
+    # Generate a random spanning tree
+    G = nx.generators.trees.random_tree(n, seed=seed)
+    G = nx.Graph(G)  # Ensure it's an undirected graph
+
+    # Add extra edges randomly until the edge budget is met
+    existing_edges = set(G.edges())
+    possible_edges = set(
+        (i, j) for i in range(n) for j in range(i + 1, n)
+    ) - existing_edges
+
+    extra_edges_needed = e - (n - 1)
+    random.seed(seed)
+    extra_edges = random.sample(possible_edges, extra_edges_needed)
+    G.add_edges_from(extra_edges)
+
     return G
 
 

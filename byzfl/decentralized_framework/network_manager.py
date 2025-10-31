@@ -6,7 +6,7 @@ across multiple nodes. It handles message routing and synchronization for the
 first iteration of the decentralized framework.
 """
 
-import numpy as np
+import torch
 import time
 from typing import Dict, List, Any, Optional
 from collections import defaultdict
@@ -41,6 +41,10 @@ class NetworkManager:
         self.nodes = {node.node_id: node for node in nodes}
         self.message_buffer = defaultdict(list)  # Buffer for inter-node messages
         
+        # Set node_registry for each node to enable neighbor communication
+        for node in nodes:
+            node.node_registry = self.nodes
+        
         # Network state
         self.current_round = 0
         self.global_converged = False
@@ -69,30 +73,10 @@ class NetworkManager:
                 "local_loss": local_loss
             }
         
-        # Step 2: Collect gradients from all nodes
-        all_gradients = []
+        # Step 2: Each node performs gossip aggregation on gradients using direct neighbor communication
         for node_id, node in self.nodes.items():
-            # Use get_flat_gradients() instead of get_flat_gradients_with_momentum()
-            # to avoid double momentum (manual momentum in client + optimizer momentum)
-            gradients = node.get_flat_gradients()
-            all_gradients.append(gradients)
-            
-            # DEBUG: Check if gradients differ between nodes (indicates different local training)
-            if self.current_round == 0:
-                print(f"DEBUG Round {self.current_round}: Node {node_id} gradient norm: {np.linalg.norm(gradients)}")
-        
-        # Step 3: Each node performs gossip aggregation on gradients
-        for node_id, node in self.nodes.items():
-            # Get gradients from neighbors (including self)
-            neighbor_gradients = []
-            
-            # Include self gradients
-            neighbor_gradients.append(all_gradients[node_id])
-            
-            # Get gradients from neighbors (simplified - in practice would be from messages)
-            for neighbor_id in node.neighbors:
-                if neighbor_id < len(all_gradients):
-                    neighbor_gradients.append(all_gradients[neighbor_id])
+            # Request gradients from neighbors using node communication methods
+            neighbor_gradients = node.request_gradient_from_neighbors()
             
             # Perform gossip aggregation on gradients
             if neighbor_gradients:
@@ -102,15 +86,15 @@ class NetworkManager:
                 # Each node steps its own scheduler (decentralized approach)
                 node.update_model_with_gradients([aggregated_gradients])
                 
-                # Update current parameters
-                node.current_parameters = node.get_flat_parameters()
+                # Update current parameters (keep as tensor)
+                node.current_parameters = node.get_flat_parameters().detach().clone()
             
             # Check convergence
             node._check_convergence()
             
             round_results[node_id].update({
                 "converged": node.converged,
-                "parameter_norm": np.linalg.norm(node.current_parameters)
+                "parameter_norm": torch.norm(node.current_parameters).item() if node.current_parameters is not None else 0.0
             })
         
         self.current_round += 1

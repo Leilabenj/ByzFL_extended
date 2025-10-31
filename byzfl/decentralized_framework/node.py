@@ -52,12 +52,13 @@ class Node(ModelBaseInterface):
         self.labelflipping = params["LabelFlipping"]
         self.nb_labels = params["nb_labels"]
         self.momentum = params["momentum"]
-        # Initialize momentum gradient as numpy array for consistency
-        flat_params = torch.cat(tuple(
-            tensor.view(-1) 
-            for tensor in self.model.parameters()
-        ))
-        self.momentum_gradient = np.zeros_like(flat_params.detach().cpu().numpy())
+        # Initialize momentum gradient as torch.Tensor (matching Client class)
+        self.momentum_gradient = torch.zeros_like(
+            torch.cat(tuple(
+                tensor.view(-1) 
+                for tensor in self.model.parameters()
+            ))
+        )
         self.training_dataloader = params["training_dataloader"]
         self.train_iterator = iter(self.training_dataloader)
         self.store_per_client_metrics = params["store_per_client_metrics"]
@@ -78,6 +79,10 @@ class Node(ModelBaseInterface):
         self.mixing_row = params["mixing_row"]  # List of (node_id, weight) tuples
         self.degree = params["degree"]
         
+        # Node registry for communication (dict mapping node_id -> Node instance)
+        # This allows nodes to communicate with their neighbors
+        self.node_registry = params.get("node_registry", None)
+        
         # Communication state
         self.message_queue = deque()  # Incoming messages
         self.message_lock = threading.Lock()
@@ -90,14 +95,13 @@ class Node(ModelBaseInterface):
         self.previous_parameters = None
         self.converged = False
         
-        # Initialize with current model parameters as numpy array
+        # Initialize with current model parameters as PyTorch tensor
         flat_params = self.get_flat_parameters()
-        if hasattr(flat_params, 'numpy'):  # PyTorch tensor
-            self.current_parameters = flat_params.detach().cpu().numpy()
-        elif hasattr(flat_params, 'cpu'):  # PyTorch tensor on CPU
-            self.current_parameters = flat_params.detach().numpy()
-        else:  # Already numpy array
-            self.current_parameters = np.array(flat_params)
+        if isinstance(flat_params, torch.Tensor):
+            self.current_parameters = flat_params.detach().clone()
+        else:
+            # Convert to tensor if somehow not already a tensor
+            self.current_parameters = torch.tensor(flat_params, dtype=torch.float32)
 
 
   # ==================== METHODS FROM CLIENT AND SERVER ====================
@@ -194,23 +198,18 @@ class Node(ModelBaseInterface):
         Description
         -----------
         Computes the gradients with momentum applied and returns them as a 
-        flat numpy array.
+        flat array.
 
         Returns
         -------
-        np.ndarray
+        torch.Tensor
             A flat array containing the gradients with momentum applied.
         """
-        # Get current gradients as numpy array
-        current_gradients = self.get_flat_gradients()
-        if hasattr(current_gradients, 'numpy'):  # PyTorch tensor
-            current_gradients = current_gradients.detach().cpu().numpy()
-        elif hasattr(current_gradients, 'cpu'):  # PyTorch tensor on CPU
-            current_gradients = current_gradients.detach().numpy()
-        
-        # Apply momentum: momentum_gradient = momentum * momentum_gradient + (1-momentum) * current_gradients
-        self.momentum_gradient = self.momentum * self.momentum_gradient + (1 - self.momentum) * current_gradients
-        
+        self.momentum_gradient.mul_(self.momentum)
+        self.momentum_gradient.add_(
+            self.get_flat_gradients(),
+            alpha=1 - self.momentum
+        )
         return self.momentum_gradient
 
     def get_loss_list(self):
@@ -268,19 +267,92 @@ class Node(ModelBaseInterface):
 
     # ==================== DECENTRALIZED METHODS FOR LOCAL UPDATES AND AGGREGATION ====================
 
+    def request_gradient(self, node_id: int) -> torch.Tensor:
+        """
+        Request gradient from a specific neighbor node.
+        
+        Parameters
+        ----------
+        node_id : int
+            The ID of the node from which to request the gradient
+            
+        Returns
+        -------
+        torch.Tensor
+            The flat gradient vector with momentum from the requested node
+            
+        Raises
+        ------
+        ValueError
+            If node_id is not a neighbor of this node
+        RuntimeError
+            If node_registry is not set or node is not found
+        """
+        # Validate that node_id is a neighbor
+        if node_id not in self.neighbors:
+            raise ValueError(
+                f"Node {node_id} is not a neighbor of node {self.node_id}. "
+                f"Current neighbors: {self.neighbors}"
+            )
+        
+        # Check if node_registry is available
+        if self.node_registry is None:
+            raise RuntimeError(
+                "node_registry is not set. Cannot request gradients from neighbors. "
+                "Set node_registry in Node initialization (e.g., from NetworkManager)."
+            )
+        
+        # Get the neighbor node from registry
+        if node_id not in self.node_registry:
+            raise RuntimeError(f"Node {node_id} not found in node registry.")
+        
+        neighbor_node = self.node_registry[node_id]
+        
+        # Request and return the gradient with momentum
+        return neighbor_node.get_flat_gradients_with_momentum()
     
-    def gossip_aggregate(self, neighbor_parameters: List) -> np.ndarray:
+    def request_gradient_from_neighbors(self) -> List[torch.Tensor]:
+        """
+        Request gradients from all neighbors.
+        
+        Returns a list of gradients in the order of self.neighbors.
+        Includes self gradient as the first element.
+        
+        Returns
+        -------
+        List[torch.Tensor]
+            List of gradient vectors: [self_gradient, neighbor1_gradient, neighbor2_gradient, ...]
+            The order matches: [self.node_id] + self.neighbors
+        """
+        neighbor_gradients = []
+        
+        # Include self gradient first
+        self_gradient = self.get_flat_gradients_with_momentum()
+        neighbor_gradients.append(self_gradient)
+        
+        # Request gradients from each neighbor in order
+        for neighbor_id in self.neighbors:
+            neighbor_gradient = self.request_gradient(neighbor_id)
+            neighbor_gradients.append(neighbor_gradient)
+        
+        return neighbor_gradients
+    
+    def gossip_aggregate(self, neighbor_parameters: List) -> torch.Tensor:
         """
         Perform gossip-based aggregation using the mixing matrix weights.
+        
+        Vectorized implementation: W_ni @ params_ni where ni = {self, neighbors}
+        Fully tensor-based for efficiency and consistency.
         
         Parameters
         ----------
         neighbor_parameters : list
             List of parameter vectors from neighbors (including self)
+            Order: [self_params, neighbor1_params, neighbor2_params, ...]
             
         Returns
         -------
-        np.ndarray
+        torch.Tensor
             Aggregated parameter vector
         """
         if not neighbor_parameters:
@@ -289,33 +361,41 @@ class Node(ModelBaseInterface):
         # Create mixing weights dictionary for easy lookup
         mixing_weights = dict(self.mixing_row)
         
-        # Convert all parameters to numpy arrays for consistent operations
-        np_params = []
+        # Convert all parameters to PyTorch tensors for consistent operations
+        tensor_params = []
         for params in neighbor_parameters:
-            if hasattr(params, 'numpy'):  # PyTorch tensor
-                np_params.append(params.detach().cpu().numpy())
-            elif hasattr(params, 'cpu'):  # PyTorch tensor on CPU
-                np_params.append(params.detach().numpy())
-            elif isinstance(params, np.ndarray):  # Already numpy array
-                np_params.append(params)
-            else:  # Convert other types to numpy array
-                np_params.append(np.array(params))
-        
-        # Initialize aggregated parameters as numpy array
-        aggregated = np.zeros_like(np_params[0])
-        
-        # Weighted average using mixing matrix
-        for i, params in enumerate(np_params):
-            # For simplicity, assume neighbor_parameters includes self at index 0
-            # In practice, you'd need to map neighbor IDs to their parameter indices
-            if i == 0:  # Self parameters
-                weight = mixing_weights.get(self.node_id, 0.0)
+            if isinstance(params, torch.Tensor):
+                tensor_params.append(params.detach().clone())
+            elif isinstance(params, np.ndarray):
+                tensor_params.append(torch.from_numpy(params).float())
             else:
-                # Map to actual neighbor IDs (this is simplified)
-                neighbor_id = self.neighbors[i-1] if i-1 < len(self.neighbors) else self.node_id
-                weight = mixing_weights.get(neighbor_id, 0.0)
-            
-            aggregated = aggregated + weight * params
+                # Convert other types to tensor
+                tensor_params.append(torch.tensor(params, dtype=torch.float32))
+        
+        # Ensure all tensors are on the same device
+        device = tensor_params[0].device if len(tensor_params) > 0 else self.device
+        tensor_params = [p.to(device) for p in tensor_params]
+        
+        # Build weight vector W_ni matching the order of neighbor_parameters
+        # neighbor_parameters order: [self, neighbor1, neighbor2, ...]
+        num_nodes_ni = len(tensor_params)
+        W_ni = torch.zeros(num_nodes_ni, device=device, dtype=torch.float32)
+        
+        # Extract weights in the same order as neighbor_parameters
+        for i in range(num_nodes_ni):
+            if i == 0:  # Self
+                node_id = self.node_id
+            else:  # Neighbor i-1
+                node_id = self.neighbors[i-1] if i-1 < len(self.neighbors) else self.node_id
+            W_ni[i] = mixing_weights.get(node_id, 0.0)
+        
+        # Stack parameters into matrix: shape (num_nodes_ni, param_dim)
+        # Each row is a parameter vector from one node
+        params_matrix = torch.stack(tensor_params, dim=0)  # Shape: (num_nodes_ni, param_dim)
+        
+        # Vectorized aggregation: W_ni @ params_matrix
+        # This computes sum_i(W_ni[i] * params_matrix[i, :])
+        aggregated = torch.matmul(W_ni, params_matrix)  # or W_ni @ params_matrix
         
         return aggregated
     
@@ -332,26 +412,24 @@ class Node(ModelBaseInterface):
         gradients : list or np.ndarray or torch.Tensor
             Aggregated gradients to apply.
         """
-        # Extract the single aggregated gradient (should be numpy array from gossip_aggregate)
+        # Extract the single aggregated gradient (should be tensor from gossip_aggregate)
         if isinstance(gradients, list) and len(gradients) == 1:
             aggregate_gradient = gradients[0]
         else:
             raise ValueError("Expected single aggregated gradient")
         
-        # Ensure it's a numpy array (should already be from gossip_aggregate)
-        if not isinstance(aggregate_gradient, np.ndarray):
-            if hasattr(aggregate_gradient, 'numpy'):  # PyTorch tensor
-                aggregate_gradient = aggregate_gradient.detach().cpu().numpy()
-            elif hasattr(aggregate_gradient, 'cpu'):  # PyTorch tensor on CPU
-                aggregate_gradient = aggregate_gradient.detach().numpy()
+        # Ensure it's a PyTorch tensor (should already be from gossip_aggregate)
+        if not isinstance(aggregate_gradient, torch.Tensor):
+            if isinstance(aggregate_gradient, np.ndarray):
+                aggregate_gradient = torch.from_numpy(aggregate_gradient).float()
             else:
-                aggregate_gradient = np.array(aggregate_gradient)
+                aggregate_gradient = torch.tensor(aggregate_gradient, dtype=torch.float32)
         
-        # Convert numpy array to PyTorch tensor for set_gradients
-        aggregate_gradient_tensor = torch.from_numpy(aggregate_gradient).float()
+        # Ensure tensor is on correct device
+        aggregate_gradient = aggregate_gradient.to(self.device)
         
         # Set aggregated gradients and step (this advances both optimizer and scheduler)
-        self.set_gradients(aggregate_gradient_tensor)
+        self.set_gradients(aggregate_gradient)
         self._step()
     
     def update_model_with_weights(self, weights):
@@ -398,18 +476,19 @@ class Node(ModelBaseInterface):
         Check if the node has converged based on parameter changes.
         """
         if self.previous_parameters is not None:
-            # Ensure both are numpy arrays for consistent operations
-            current = np.array(self.current_parameters) if not isinstance(self.current_parameters, np.ndarray) else self.current_parameters
-            previous = np.array(self.previous_parameters) if not isinstance(self.previous_parameters, np.ndarray) else self.previous_parameters
+            # Ensure both are tensors for consistent operations
+            current = self.current_parameters if isinstance(self.current_parameters, torch.Tensor) else torch.tensor(self.current_parameters, dtype=torch.float32)
+            previous = self.previous_parameters if isinstance(self.previous_parameters, torch.Tensor) else torch.tensor(self.previous_parameters, dtype=torch.float32)
             
-            param_diff = np.linalg.norm(current - previous)
+            # Compute norm using torch
+            param_diff = torch.norm(current - previous).item()
             self.converged = param_diff < self.convergence_threshold
         
-        # Update previous parameters (ensure it's a numpy array)
-        if isinstance(self.current_parameters, np.ndarray):
-            self.previous_parameters = self.current_parameters.copy()
+        # Update previous parameters (ensure it's a tensor)
+        if isinstance(self.current_parameters, torch.Tensor):
+            self.previous_parameters = self.current_parameters.clone()
         else:
-            self.previous_parameters = np.array(self.current_parameters)
+            self.previous_parameters = torch.tensor(self.current_parameters, dtype=torch.float32)
     
     def is_converged(self) -> bool:
         """
@@ -437,7 +516,7 @@ class Node(ModelBaseInterface):
             "degree": self.degree,
             "round_number": self.round_number,
             "converged": self.converged,
-            "parameter_norm": np.linalg.norm(self.current_parameters) if self.current_parameters is not None else 0.0
+            "parameter_norm": torch.norm(self.current_parameters).item() if self.current_parameters is not None else 0.0
         }
     
 
